@@ -1,0 +1,104 @@
+﻿<Window x:Class="LetterGeneratorApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Генератор писем DOCX"
+        Height="820"
+        Width="1080"
+        WindowStartupLocation="CenterScreen"
+        Background="#F3F4F8">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#1F2937" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="0,6,0,16" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="BorderBrush" Value="#CBD5E1" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="White" />
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#0F766E" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Padding" Value="16,10" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Margin" Value="0,8,0,0" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#F3F4F8" Offset="0" />
+                <GradientStop Color="#E8F1F2" Offset="1" />
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <Grid Margin="28">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0"
+                        Background="White"
+                        CornerRadius="20"
+                        Padding="28"
+                        Margin="0"
+                        BorderBrush="#D7DEE8"
+                        BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="Автоматическая генерация письма" FontSize="30" FontWeight="Bold" Margin="0,0,0,6" />
+                        <TextBlock Text="Заполните поля, и приложение подставит значения в шаблон DOCX через DocumentFormat.OpenXml." Foreground="#4B5563" TextWrapping="Wrap" Margin="0,0,0,24" />
+
+                        <TextBlock Text="Должность адресата" FontWeight="SemiBold" />
+                        <TextBox x:Name="RecipientPostTextBox" Text="Генеральному директору" />
+
+                        <TextBlock Text="ФИО адресата" FontWeight="SemiBold" />
+                        <TextBox x:Name="RecipientNameTextBox" Text="Иванову Ивану Ивановичу" />
+
+                        <TextBlock Text="Имя для обращения" FontWeight="SemiBold" />
+                        <TextBox x:Name="RecipientGreetingTextBox" Text="Иван Иванович" />
+
+                        <TextBlock Text="Должность отправителя" FontWeight="SemiBold" />
+                        <TextBox x:Name="SenderPostTextBox" Text="Конкурсного управляющего" />
+
+                        <TextBlock Text="ФИО отправителя" FontWeight="SemiBold" />
+                        <TextBox x:Name="SenderNameTextBox" Text="Амирбекова Э.Н." />
+
+                        <TextBlock Text="Тема письма" FontWeight="SemiBold" />
+                        <TextBox x:Name="SubjectTextBox" Text="Уведомление о задолженности" />
+
+                        <TextBlock Text="Текст письма" FontWeight="SemiBold" />
+                        <TextBox x:Name="LetterBodyTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Height="180"
+                                 Text="Сообщаем Вам, что в документах организации выявлена задолженность. Просим в установленный срок предоставить письменный ответ и погасить задолженность. В случае отказа материалы будут переданы для дальнейшего рассмотрения." />
+
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <StackPanel Width="220" Margin="0,0,16,0">
+                                <TextBlock Text="Дата письма" FontWeight="SemiBold" />
+                                <DatePicker x:Name="LetterDatePicker" />
+                            </StackPanel>
+
+                            <StackPanel VerticalAlignment="Bottom">
+                                <Button Content="Создать DOCX" Click="CreateDocumentButton_Click" Width="180" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <TextBlock x:Name="StatusTextBlock" Margin="0,18,0,0" Foreground="#0F766E" FontWeight="SemiBold" Text="Шаблон создаётся автоматически при первом запуске." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Window>
