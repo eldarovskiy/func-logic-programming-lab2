@@ -44,14 +44,15 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <Grid Margin="28">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="1.2*" />
+                    <ColumnDefinition Width="0.8*" />
                 </Grid.ColumnDefinitions>
 
                 <Border Grid.Column="0"
                         Background="White"
                         CornerRadius="20"
                         Padding="28"
-                        Margin="0"
+                        Margin="0,0,18,0"
                         BorderBrush="#D7DEE8"
                         BorderThickness="1">
                     <StackPanel>
@@ -62,7 +63,7 @@
                         <TextBox x:Name="RecipientPostTextBox" Text="Генеральному директору" />
 
                         <TextBlock Text="ФИО адресата" FontWeight="SemiBold" />
-                        <TextBox x:Name="RecipientNameTextBox" Text="Иванову Ивану Ивановичу" />
+                        <TextBox x:Name="RecipientNameTextBox" Text="Магомедову Магомеда Магомедовичу" />
 
                         <TextBlock Text="Имя для обращения" FontWeight="SemiBold" />
                         <TextBox x:Name="RecipientGreetingTextBox" Text="Иван Иванович" />
@@ -83,6 +84,24 @@
                                  VerticalScrollBarVisibility="Auto"
                                  Height="180"
                                  Text="Сообщаем Вам, что в документах организации выявлена задолженность. Просим в установленный срок предоставить письменный ответ и погасить задолженность. В случае отказа материалы будут переданы для дальнейшего рассмотрения." />
+                        <TextBlock Text="Приложения к письму" FontWeight="SemiBold" />
+                        <TextBlock Text="Добавьте одно или несколько приложений: заголовок, текст и при необходимости число листов." Foreground="#4B5563" TextWrapping="Wrap" Margin="0,0,0,8" />
+                        <TextBlock Text="Заголовок приложения" FontWeight="SemiBold" />
+                        <TextBox x:Name="AppendixTitleTextBox" />
+                        <TextBlock Text="Текст приложения" FontWeight="SemiBold" />
+                        <TextBox x:Name="AppendixBodyTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 Height="120" />
+                        <TextBlock Text="Листов (необязательно)" FontWeight="SemiBold" />
+                        <TextBox x:Name="AppendixPagesTextBox" Width="120" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Button Content="Добавить приложение" Click="AddAppendixButton_Click" Width="180" Margin="0,0,8,0" />
+                            <Button Content="Очистить приложения" Click="ClearAppendicesButton_Click" Width="170" Background="#334155" />
+                        </StackPanel>
+                        <TextBlock Text="Добавленные приложения" FontWeight="SemiBold" />
+                        <ListBox x:Name="AppendicesListBox" Height="120" Margin="0,6,0,16" BorderBrush="#CBD5E1" BorderThickness="1" />
 
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                             <StackPanel Width="220" Margin="0,0,16,0">
@@ -96,6 +115,28 @@
                         </StackPanel>
 
                         <TextBlock x:Name="StatusTextBlock" Margin="0,18,0,0" Foreground="#0F766E" FontWeight="SemiBold" Text="Шаблон создаётся автоматически при первом запуске." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1"
+                        Background="White"
+                        CornerRadius="20"
+                        Padding="24"
+                        BorderBrush="#D7DEE8"
+                        BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="Поддерживаемые плейсхолдеры" FontSize="20" FontWeight="Bold" Margin="0,0,0,12" />
+                        <StackPanel>
+                            <TextBlock Text="{}{RECIPIENT_POST} - должность адресата" Margin="0,4,0,0" />
+                            <TextBlock Text="{}{RECIPIENT_NAME} - ФИО адресата" Margin="0,4,0,0" />
+                            <TextBlock Text="{}{RECIPIENT_GREETING} - имя для обращения" Margin="0,4,0,0" />
+                            <TextBlock Text="{}{SENDER_POST} - должность отправителя" Margin="0,4,0,0" />
+                            <TextBlock Text="{}{SENDER_NAME} - ФИО отправителя" Margin="0,4,0,0" />
+                            <TextBlock Text="{}{LETTER_SUBJECT} - тема письма" Margin="0,4,0,0" />
+                            <TextBlock Text="{}{LETTER_BODY} - основной текст письма" Margin="0,4,0,0" />
+                            <TextBlock Text="{}{LETTER_DATE} - дата письма" Margin="0,4,0,0" />
+                            <TextBlock Text="Приложения - формируются автоматически по списку" Margin="0,4,0,0" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>

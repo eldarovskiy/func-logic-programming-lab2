@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
@@ -18,11 +19,61 @@ namespace LetterGeneratorApp;
 public partial class MainWindow : Window
 {
     private readonly LetterTemplateService templateService = new();
+    private readonly List<LetterAppendix> appendices = new();
 
     public MainWindow()
     {
         InitializeComponent();
         LetterDatePicker.SelectedDate = DateTime.Today;
+        RefreshAppendicesListBox();
+    }
+
+    private void AddAppendixButton_Click(object sender, RoutedEventArgs e)
+    {
+        string title = AppendixTitleTextBox.Text.Trim();
+        string body = AppendixBodyTextBox.Text.Trim();
+
+        if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(body))
+        {
+            StatusTextBlock.Text = "Для приложения заполните заголовок и текст.";
+            return;
+        }
+
+        int? pageCount = null;
+        string pagesRaw = AppendixPagesTextBox.Text.Trim();
+        if (!string.IsNullOrWhiteSpace(pagesRaw) && int.TryParse(pagesRaw, out int parsed) && parsed > 0)
+        {
+            pageCount = parsed;
+        }
+
+        appendices.Add(new LetterAppendix(title, body, pageCount));
+        RefreshAppendicesListBox();
+
+        AppendixTitleTextBox.Text = string.Empty;
+        AppendixBodyTextBox.Text = string.Empty;
+        AppendixPagesTextBox.Text = string.Empty;
+
+        StatusTextBlock.Text = $"Добавлено приложений: {appendices.Count}.";
+    }
+
+    private void ClearAppendicesButton_Click(object sender, RoutedEventArgs e)
+    {
+        appendices.Clear();
+        RefreshAppendicesListBox();
+        StatusTextBlock.Text = "Список приложений очищен.";
+    }
+
+    private void RefreshAppendicesListBox()
+    {
+        if (AppendicesListBox == null)
+        {
+            return;
+        }
+
+        AppendicesListBox.ItemsSource = null;
+        AppendicesListBox.ItemsSource = appendices
+            .Select((x, i) => x.ToListLine(i + 1))
+            .ToList();
     }
 
     private void CreateDocumentButton_Click(object sender, RoutedEventArgs e)
@@ -56,13 +107,15 @@ public partial class MainWindow : Window
                 ["{LETTER_DATE}"] = (LetterDatePicker.SelectedDate ?? DateTime.Today).ToString("dd.MM.yyyy")
             };
 
-            templateService.GenerateDocument(templatePath, saveFileDialog.FileName, replacements);
+            List<LetterAppendix> appendicesForDocument = new(appendices);
+
+            templateService.GenerateDocument(templatePath, saveFileDialog.FileName, replacements, appendicesForDocument);
 
             StatusTextBlock.Text = $"Документ создан: {saveFileDialog.FileName}";
 
             Process.Start(new ProcessStartInfo(saveFileDialog.FileName)
             {
-                UseShellExecute = false
+                UseShellExecute = true
             });
         }
         catch (Exception ex)
@@ -87,7 +140,11 @@ internal sealed class LetterTemplateService
         return TemplatePath;
     }
 
-    public void GenerateDocument(string templatePath, string outputPath, IReadOnlyDictionary<string, string> replacements)
+    public void GenerateDocument(
+        string templatePath,
+        string outputPath,
+        IReadOnlyDictionary<string, string> replacements,
+        IReadOnlyList<LetterAppendix> appendices)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? AppContext.BaseDirectory);
         File.Copy(templatePath, outputPath, overwrite: true);
@@ -95,6 +152,7 @@ internal sealed class LetterTemplateService
         using WordprocessingDocument document = WordprocessingDocument.Open(outputPath, true);
 
         ReplaceInElement(document.MainDocumentPart?.Document, replacements);
+        InsertAppendices(document.MainDocumentPart?.Document?.Body, appendices);
 
         if (document.MainDocumentPart != null)
         {
@@ -110,6 +168,80 @@ internal sealed class LetterTemplateService
         }
 
         document.MainDocumentPart?.Document.Save();
+    }
+
+    private static void InsertAppendices(Body? body, IReadOnlyList<LetterAppendix> appendices)
+    {
+        if (body == null)
+        {
+            return;
+        }
+
+        ReplacePlaceholderWithParagraphs(body, "{APPENDIX_LIST_PLACEHOLDER}", BuildAppendixListParagraphs(appendices));
+        ReplacePlaceholderWithParagraphs(body, "{APPENDIX_CONTENT_PLACEHOLDER}", BuildAppendixContentParagraphs(appendices));
+    }
+
+    private static void ReplacePlaceholderWithParagraphs(Body body, string placeholder, IReadOnlyList<Paragraph> paragraphs)
+    {
+        Paragraph? marker = body.Elements<Paragraph>()
+            .FirstOrDefault(p => p.InnerText.Contains(placeholder, StringComparison.Ordinal));
+
+        if (marker == null)
+        {
+            return;
+        }
+
+        OpenXmlElement anchor = marker;
+        foreach (Paragraph paragraph in paragraphs)
+        {
+            anchor.InsertAfterSelf(paragraph);
+            anchor = paragraph;
+        }
+
+        marker.Remove();
+    }
+
+    private static IReadOnlyList<Paragraph> BuildAppendixListParagraphs(IReadOnlyList<LetterAppendix> appendices)
+    {
+        if (appendices.Count == 0)
+        {
+            return Array.Empty<Paragraph>();
+        }
+
+        List<Paragraph> result = new();
+        string heading = appendices.Count == 1 ? "Приложение:" : "Приложения:";
+        result.Add(CreateParagraph(heading, JustificationValues.Left, 18, true));
+
+        for (int i = 0; i < appendices.Count; i++)
+        {
+            result.Add(CreateParagraph(appendices[i].ToListLine(i + 1), JustificationValues.Left, 18));
+        }
+
+        result.Add(CreateParagraph(string.Empty, JustificationValues.Left, 12));
+        return result;
+    }
+
+    private static IReadOnlyList<Paragraph> BuildAppendixContentParagraphs(IReadOnlyList<LetterAppendix> appendices)
+    {
+        if (appendices.Count == 0)
+        {
+            return Array.Empty<Paragraph>();
+        }
+
+        List<Paragraph> result = new();
+
+        for (int i = 0; i < appendices.Count; i++)
+        {
+            LetterAppendix appendix = appendices[i];
+            string label = appendices.Count == 1 ? "Приложение" : $"Приложение {i + 1}";
+
+            result.Add(CreateParagraph(label, JustificationValues.Right, 18, true));
+            result.Add(CreateParagraph(appendix.Title, JustificationValues.Center, 20, true));
+            result.Add(CreateParagraph(appendix.Body, JustificationValues.Both, 18));
+            result.Add(CreateParagraph(string.Empty, JustificationValues.Left, 12));
+        }
+
+        return result;
     }
 
     private static void ReplaceInElement(OpenXmlElement? root, IReadOnlyDictionary<string, string> replacements)
@@ -218,6 +350,10 @@ internal sealed class LetterTemplateService
         // Основной текст — по ширине страницы, но выровнен по ширине (Justify)
         body.Append(CreateParagraph("{LETTER_BODY}", JustificationValues.Both, 22));
         body.Append(CreateParagraph(string.Empty, JustificationValues.Left, 20));
+
+        // Плейсхолдеры для автоматической вставки списка и содержимого приложений
+        body.Append(CreateParagraph("{APPENDIX_LIST_PLACEHOLDER}", JustificationValues.Left, 18));
+        body.Append(CreateParagraph("{APPENDIX_CONTENT_PLACEHOLDER}", JustificationValues.Left, 18));
 
         // Подписи: левый блок должность и контакт, справа подпись и ФИО
         Table signTable = new(
@@ -390,5 +526,28 @@ internal sealed class LetterTemplateService
             new Run(
                 new RunProperties(new FontSize() { Val = "24" }),
                 new Text(text) { Space = SpaceProcessingModeValues.Preserve }));
+    }
+}
+
+internal sealed class LetterAppendix
+{
+    public LetterAppendix(string title, string body, int? pageCount)
+    {
+        Title = title;
+        Body = body;
+        PageCount = pageCount;
+    }
+
+    public string Title { get; }
+
+    public string Body { get; }
+
+    public int? PageCount { get; }
+
+    public string ToListLine(int index)
+    {
+        return PageCount.HasValue
+            ? $"{index}. {Title} на {PageCount.Value} л."
+            : $"{index}. {Title}";
     }
 }
